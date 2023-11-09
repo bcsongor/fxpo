@@ -1,0 +1,12 @@
+{
+  "name" : "fxpo",
+  "version-string" : "1.0.0",
+  "builtin-baseline" : "9f03078bdcbab3ad8c1e3927c40c3fb48e42501f",
+  "dependencies" : [ {
+    "name" : "libjpeg-turbo",
+    "version>=" : "3.0.1"
+  }, {
+    "name" : "curl",
+    "version>=" : "8.4.0"
+  } ]
+}
