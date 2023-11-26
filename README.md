@@ -33,6 +33,8 @@ Running on Intel Core i9-13900KS, NVIDIA GetForce RTX 4090 and
 
 ### Usage
 
+Use Ortho4XP to assemble vector data, triangulate mesh, draw masks and build DSF (set `skip_downloads` to `True` in `Ortho4XP.cfg`) for the given tileset. Once complete, use _fxpo_ to download and build orthoimage textures for the tileset.
+
 ```text
 Usage: fxpo "<scenery_path>" "<tileset>"
 
@@ -42,6 +44,8 @@ Usage: fxpo "<scenery_path>" "<tileset>"
   <tileset> is the coordinates of the tileset to download and process.
     Example: +57-006
 ```
+
+The above example expects the path `C:\X-Plane 12\Custom Scenery\zOrtho4XP_+57-006` to exist.
 
 <p align="center">
   <img src="https://github.com/bcsongor/fxpo/assets/8850110/02481f26-46a0-4d21-9b20-d5fcec857fa4" alt="fxpo screenshot">
