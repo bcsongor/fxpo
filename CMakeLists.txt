@@ -45,7 +45,7 @@ add_custom_command(TARGET fxpo POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_di
 if(MSVC)
     # These CRT features cause all sorts of compatibility issues (e.g. localtime_s C11 definition differs from CRT).
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-    target_compile_options(fxpo PUBLIC /arch:AVX2 /ZI /W4 /WX)
+    target_compile_options(fxpo PUBLIC /openmp /arch:AVX2 /ZI /W4 /WX)
     target_link_options(fxpo PUBLIC /INCREMENTAL)
 endif()
 
