@@ -68,6 +68,13 @@ main( int     argc,
     struct fxpo_http_multi_context_t http_ctx;
     fxpo_http_multi_context_new( &http_ctx, max_parallel, CHUNK_SIZE * 4 );
 
+    /* HTTP response buffers. */
+    struct fxpo_http_data_t res[CHUNKS_PER_TILE];
+    for( size_t i = 0; i < CHUNKS_PER_TILE; i++ ) fxpo_http_data_new( &res[i] );
+
+    /* Pixels of the orthophoto for a tile. This is a 4096x4096 image. */
+    uint8_t * const tile_imgbuf = fxpo_aligned_malloc( TILE_SIZE * COLOUR_CHANNELS );
+
     #pragma omp for
     for( it = 0; it < tile_num; it++ ) {
       /* MSVC only supports OpenMP 2.0 that has no proper cancellation support.
@@ -79,14 +86,10 @@ main( int     argc,
 
       FXPO_LOG_INFO( "building chunks for tile x=%u y=%u zoom_level=%u", tile->x, tile->y, tile->zoom_level );
 
-      /* Pixels of the orthophoto for a tile. This is a 4096x4096 image. */
-      uint8_t * const tile_imgbuf = fxpo_aligned_malloc( TILE_SIZE * COLOUR_CHANNELS );
-
       char quadkey[MAX_QUADKEY_LENGTH] = {0};
 
-      char                    urls[CHUNKS_PER_TILE][MAX_URL_LENGTH];
-      struct fxpo_http_data_t res[CHUNK_SIZE];
-      struct fxpo_chunk_t     chunks[CHUNK_SIZE];
+      char                urls[CHUNKS_PER_TILE][MAX_URL_LENGTH];
+      struct fxpo_chunk_t chunks[CHUNK_SIZE];
 
       uint8_t * imgbuf = NULL;
       size_t    imgbuf_len;
@@ -105,8 +108,6 @@ main( int     argc,
 
           fxpo_ortho_tile2quadkey( chunks[i].x, chunks[i].y, chunks[i].zoom_level, &quadkey[0] );
           fxpo_ortho_build_url( tile->provider, quadkey, &urls[i][0], MAX_URL_LENGTH );
-
-          fxpo_http_data_new( &res[i] );
         }
       }
 
@@ -217,11 +218,12 @@ main( int     argc,
       FXPO_LOG_INFO( "saved compressed tile to dds=%s", dds_path );
 
 cleanup:
-      for( size_t i = 0; i < CHUNKS_PER_TILE; i++ ) fxpo_http_data_free( &res[i] );
+      for( size_t i = 0; i < CHUNKS_PER_TILE; i++ ) fxpo_http_data_reset( &res[i] );
       if( imgbuf != NULL ) aligned_free( imgbuf );
-      aligned_free( tile_imgbuf );
     } /* for end */
 
+    aligned_free( tile_imgbuf );
+    for( size_t i = 0; i < CHUNKS_PER_TILE; i++ ) fxpo_http_data_free( &res[i] );
     fxpo_http_multi_context_free( &http_ctx );
   } /* omp parallel end */
 
