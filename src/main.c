@@ -70,7 +70,10 @@ main( int     argc,
 
     #pragma omp for
     for( it = 0; it < tile_num; it++ ) {
-      if( abort ) break; /* MSVC only supports OMP 2.0 that has no proper cancellation support. */
+      /* MSVC only supports OpenMP 2.0 that has no proper cancellation support.
+         `break` statements in for loops are not allowed by standard OMP however MSVC's implementation
+         allows it and exits the current thread's set of iterations which is exactly the goal here. */
+      if( abort ) break;
 
       const struct fxpo_tile_t * const tile = tiles[it];
 
@@ -84,6 +87,9 @@ main( int     argc,
       char                    urls[CHUNKS_PER_TILE][MAX_URL_LENGTH];
       struct fxpo_http_data_t res[CHUNK_SIZE];
       struct fxpo_chunk_t     chunks[CHUNK_SIZE];
+
+      uint8_t * imgbuf = NULL;
+      size_t    imgbuf_len;
 
       /* Each tile has 256 chunks (16x16). */
       for( uint8_t yo = 0; yo < CHUNKS_PER_TILE_SIDE; yo++ ) {
@@ -152,15 +158,12 @@ main( int     argc,
         goto cleanup;
       }
 
-      for( uint8_t yo = 0; yo < CHUNKS_PER_TILE_SIDE && !abort; yo++ ) {
-        for( uint8_t xo = 0; xo < CHUNKS_PER_TILE_SIDE && !abort; xo++ ) {
+      for( uint8_t yo = 0; yo < CHUNKS_PER_TILE_SIDE; yo++ ) {
+        for( uint8_t xo = 0; xo < CHUNKS_PER_TILE_SIDE; xo++ ) {
           const size_t i = xo*CHUNKS_PER_TILE_SIDE + yo;
 
           const struct fxpo_chunk_t * const     chunk = &chunks[i];
           const struct fxpo_http_data_t * const data  = &res[i];
-
-          uint8_t * imgbuf = NULL;
-          size_t    imgbuf_len;
 
           FXPO_LOG_DEBUG( "processing JPEG image for url=%s size=%zu", urls[i], data->size );
 
@@ -181,6 +184,7 @@ main( int     argc,
             } else {
               FXPO_LOG_ERROR( "failed to cropped decode JPEG image for url=%s", urls[i] );
               abort = true;
+              goto cleanup;
             }
           } else {
             if( fxpo_jpeg_decode( data->buf, data->size, &imgbuf, &imgbuf_len ) == FXPOS_OK ) {
@@ -188,21 +192,20 @@ main( int     argc,
             } else {
               FXPO_LOG_ERROR( "failed to decode JPEG image for url=%s", urls[i] );
               abort = true;
+              goto cleanup;
             }
           }
 
-          for( size_t j = 0; j < CHUNK_SIZE && !abort; j++ ) {
+          for( size_t j = 0; j < CHUNK_SIZE; j++ ) {
             memcpy( &tile_imgbuf[yo*TILE_WIDTH*CHUNK_SIZE*COLOUR_CHANNELS + j*TILE_HEIGHT*COLOUR_CHANNELS + xo*CHUNK_SIZE*COLOUR_CHANNELS],
                     &imgbuf[j*CHUNK_SIZE*COLOUR_CHANNELS],
                     CHUNK_SIZE*COLOUR_CHANNELS );
           }
 
-          if( imgbuf != NULL ) aligned_free( imgbuf );
+          aligned_free( imgbuf );
+          imgbuf = NULL;
         }
       }
-
-      /* Do not proceed with compressing the tile image if we encountered an error. */
-      if( abort ) goto cleanup;
 
       FXPO_LOG_DEBUG( "built tile x=%u y=%u zl=%u", tile->x, tile->y, tile->zoom_level );
 
@@ -215,6 +218,7 @@ main( int     argc,
 
 cleanup:
       for( size_t i = 0; i < CHUNKS_PER_TILE; i++ ) fxpo_http_data_free( &res[i] );
+      if( imgbuf != NULL ) aligned_free( imgbuf );
       aligned_free( tile_imgbuf );
     } /* for end */
 
