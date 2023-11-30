@@ -16,6 +16,7 @@
 
 enum fxpo_provider {
   FXPO_PROVIDER_BI,
+  FXPO_PROVIDER_ARC,
   FXPO_PROVIDER_COUNT
 };
 
@@ -65,10 +66,11 @@ fxpo_ortho_chunk_bbox( uint32_t   downsampled_chunk_x,
 
 /* fxpo_ortho_build_url builds an HTTP URL to fetch the image associated with a chunk. */
 enum fxpo_status
-fxpo_ortho_build_url( enum fxpo_provider provider,
-                      const char *       quadkey,
-                      char *             url,
-                      size_t             url_len );
+fxpo_ortho_build_url( enum fxpo_provider          provider,
+                      const struct fxpo_chunk_t * chunk,
+                      const char *                quadkey,
+                      char *                      url,
+                      size_t                      url_len );
 
 void
 fxpo_ortho_build_dds_path( const char *               scenery_path,

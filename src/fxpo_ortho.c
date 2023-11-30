@@ -10,6 +10,7 @@
 
 static const char * const FXPO_PROVIDER_STR[] = {
   "BI",
+  "ARC"
 };
 
 static inline const char *
@@ -86,10 +87,11 @@ fxpo_ortho_wgs2tile( const double         lat,
 }
 
 enum fxpo_status
-fxpo_ortho_build_url( enum fxpo_provider provider,
-                      const char *       quadkey,
-                      char *             url,
-                      size_t             url_len ) {
+fxpo_ortho_build_url( enum fxpo_provider                provider,
+                      const struct fxpo_chunk_t * const chunk,
+                      const char *                      quadkey,
+                      char *                            url,
+                      size_t                            url_len ) {
 
   static uint8_t server_id = 0;
   #pragma omp threadprivate(server_id)
@@ -99,6 +101,11 @@ fxpo_ortho_build_url( enum fxpo_provider provider,
       server_id = server_id % 4 + 1;
       /* Use unencrypted HTTP endpoint to save time on TLS handshake. */
       snprintf( url, url_len, "http://ecn.t%u.tiles.virtualearth.net/tiles/a%s.jpeg?g=" BI_CACHE_VARIANT_1, server_id, quadkey );
+      return FXPOS_OK;
+    }
+
+    case FXPO_PROVIDER_ARC: {
+      snprintf( url, url_len, "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/%u/%u/%u", chunk->zoom_level, chunk->y, chunk->x );
       return FXPOS_OK;
     }
 

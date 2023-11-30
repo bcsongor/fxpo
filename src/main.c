@@ -107,7 +107,7 @@ main( int     argc,
           };
 
           fxpo_ortho_tile2quadkey( chunks[i].x, chunks[i].y, chunks[i].zoom_level, &quadkey[0] );
-          fxpo_ortho_build_url( tile->provider, quadkey, &urls[i][0], MAX_URL_LENGTH );
+          fxpo_ortho_build_url( tile->provider, &chunks[i], quadkey, &urls[i][0], MAX_URL_LENGTH );
         }
       }
 
@@ -130,13 +130,16 @@ main( int     argc,
           if( chunk->found ) continue;
 
           /* Check if chunk at given zoom level exists. Downsample if not. */
-          if( strstr((const char *) res[i].buf, "X-VE-Tile-Info: no-tile" )) {
+          /* FIXME (@bcsongor, 2023-11-29) Is there a more reliable way to check if Arc has an image for the given chunk? */
+          if( tile->provider == FXPO_PROVIDER_BI && strstr( (const char *)res[i].buf, "X-VE-Tile-Info: no-tile" )
+              || tile->provider == FXPO_PROVIDER_ARC && strstr( (const char *)res[i].buf, "Etag: vvvvvvvvvvvvf" )) {
+
             FXPO_LOG_DEBUG( "missing chunk at x=%u y=%u for zl=%u. downsampling.", chunk->x, chunk->y, chunk->zoom_level );
             has_chunks = false;
 
             fxpo_ortho_downsample_chunk( chunk );
             fxpo_ortho_tile2quadkey( chunk->x, chunk->y, chunk->zoom_level, &quadkey[0] );
-            fxpo_ortho_build_url( tile->provider, quadkey, &urls[i][0], MAX_URL_LENGTH );
+            fxpo_ortho_build_url( tile->provider, chunk, quadkey, &urls[i][0], MAX_URL_LENGTH );
 
             /* printf( "%u %u %u URL: %s\n", chunk->x, chunk->y, chunk->zoom_level, urls[i] ); */
 
